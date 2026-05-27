@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 45%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222 47% 11%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 209 82% 31%;
+}
+
+* {
+  @apply border-border;
+}
+
+html {
+  background: #ffffff;
+}
+
+body {
+  @apply bg-background text-foreground antialiased;
+  font-family: Verdana, Geneva, system-ui, sans-serif;
+}
+
+::selection {
+  background: rgba(14, 77, 146, 0.18);
+}
+
+.recharts-cartesian-axis-tick-value {
+  font-size: 12px;
+  fill: #64748b;
+}
+
+.recharts-tooltip-wrapper {
+  outline: none;
+}
