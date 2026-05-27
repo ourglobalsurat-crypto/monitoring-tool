@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 
-const protectedPrefixes = ["/dashboard", "/api/analytics", "/api/dashboard"];
+const protectedPrefixes = ["/dashboard", "/api/analytics"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -29,5 +29,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/api/analytics/:path*", "/api/dashboard/:path*"],
+  matcher: ["/dashboard/:path*", "/api/analytics/:path*"],
 };

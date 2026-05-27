@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, Home, Megaphone, Menu, Search, ShieldCheck, X } from "lucide-react";
+import { BarChart3, Home, Megaphone, Menu, Search, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -12,6 +13,28 @@ const navItems = [
   { href: "/dashboard/seo", label: "SEO", icon: Search },
   { href: "/dashboard/ads", label: "Google Ads", icon: Megaphone },
 ];
+
+function BrandLogo({ compact = false }: { compact?: boolean }) {
+  return (
+    <div className="flex items-center gap-3">
+      <Image
+        src="/medallion-fence-logo.png"
+        alt="Medallion Fence"
+        width={compact ? 44 : 56}
+        height={compact ? 44 : 56}
+        priority={compact}
+        className={cn(
+          "shrink-0 rounded-md border border-border bg-white object-contain shadow-sm",
+          compact ? "h-11 w-11 p-1" : "h-14 w-14 p-1.5",
+        )}
+      />
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-slate-500">Medallion Fence</p>
+        <p className={cn("truncate font-semibold text-slate-950", compact ? "text-base" : "text-lg")}>SEO Dashboard</p>
+      </div>
+    </div>
+  );
+}
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -55,15 +78,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-white">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 border-r border-border bg-white px-5 py-5 lg:block">
         <div className="flex h-full flex-col">
-          <div className="flex items-center gap-3 px-1">
-            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary text-white">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-500">Medallion Fence</p>
-              <p className="text-base font-semibold text-slate-950">SEO Dashboard</p>
-            </div>
-          </div>
+          <BrandLogo />
           <div className="mt-8">
             <NavLinks />
           </div>
@@ -80,10 +95,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
       <header className="sticky top-0 z-20 border-b border-border bg-white/95 backdrop-blur lg:hidden">
         <div className="flex h-16 items-center justify-between px-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Medallion Fence</p>
-            <p className="text-base font-semibold text-slate-950">SEO Dashboard</p>
-          </div>
+          <BrandLogo compact />
           <Button variant="outline" size="icon" aria-label="Open menu" onClick={() => setOpen(true)}>
             <Menu className="h-5 w-5" />
           </Button>
@@ -95,12 +107,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           <button className="absolute inset-0 bg-slate-950/30" aria-label="Close menu" onClick={() => setOpen(false)} />
           <div className="absolute inset-y-0 left-0 w-80 max-w-[88vw] bg-white p-5 shadow-soft">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary text-white">
-                  <ShieldCheck className="h-5 w-5" />
-                </div>
-                <p className="font-semibold text-slate-950">Medallion Fence</p>
-              </div>
+              <BrandLogo compact />
               <Button variant="ghost" size="icon" aria-label="Close menu" onClick={() => setOpen(false)}>
                 <X className="h-5 w-5" />
               </Button>

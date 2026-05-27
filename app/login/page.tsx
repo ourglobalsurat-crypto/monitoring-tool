@@ -1,8 +1,9 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { LockKeyhole, ShieldCheck } from "lucide-react";
+import { LockKeyhole } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,10 +40,15 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-white px-4 py-10">
       <div className="w-full max-w-md">
-        <div className="mb-6 flex items-center justify-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-md bg-primary text-white">
-            <ShieldCheck className="h-5 w-5" />
-          </div>
+        <div className="mb-6 flex items-center justify-center gap-4">
+          <Image
+            src="/medallion-fence-logo.png"
+            alt="Medallion Fence"
+            width={64}
+            height={64}
+            priority
+            className="h-16 w-16 rounded-md border border-border bg-white object-contain p-1.5 shadow-sm"
+          />
           <div>
             <p className="text-sm font-semibold text-slate-500">Medallion Fence</p>
             <h1 className="text-xl font-semibold tracking-normal text-slate-950">Client Reporting</h1>

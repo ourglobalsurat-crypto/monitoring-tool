@@ -40,8 +40,38 @@ async function runReport(propertyId: string, requestBody: Record<string, unknown
   return response.data as RunReportResponse;
 }
 
+async function optionalRunReport(propertyId: string, requestBody: Record<string, unknown>) {
+  try {
+    return await runReport(propertyId, requestBody);
+  } catch {
+    return { rows: [] } satisfies RunReportResponse;
+  }
+}
+
 async function fetchPeriod(propertyId: string, startDate: string, endDate: string) {
-  const [summary, traffic, devices, conversions, trends] = await Promise.all([
+  const organicFilter = {
+    filter: {
+      fieldName: "sessionDefaultChannelGroup",
+      stringFilter: {
+        matchType: "EXACT",
+        value: "Organic Search",
+      },
+    },
+  };
+
+  const [
+    summary,
+    traffic,
+    organicSummary,
+    organicLandingPages,
+    searchOverview,
+    searchLandingPages,
+    devices,
+    conversions,
+    trends,
+    organicTrends,
+    searchTrends,
+  ] = await Promise.all([
     runReport(propertyId, {
       dateRanges: [{ startDate, endDate }],
       metrics: [
@@ -56,6 +86,39 @@ async function fetchPeriod(propertyId: string, startDate: string, endDate: strin
       dimensions: [{ name: "sessionDefaultChannelGroup" }],
       metrics: [{ name: "sessions" }, { name: "activeUsers" }],
       orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+      limit: 8,
+    }),
+    runReport(propertyId, {
+      dateRanges: [{ startDate, endDate }],
+      metrics: [{ name: "sessions" }, { name: "activeUsers" }],
+      dimensionFilter: organicFilter,
+    }),
+    runReport(propertyId, {
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: "landingPagePlusQueryString" }],
+      metrics: [{ name: "sessions" }, { name: "activeUsers" }],
+      dimensionFilter: organicFilter,
+      orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+      limit: 8,
+    }),
+    optionalRunReport(propertyId, {
+      dateRanges: [{ startDate, endDate }],
+      metrics: [
+        { name: "organicGoogleSearchClicks" },
+        { name: "organicGoogleSearchImpressions" },
+        { name: "organicGoogleSearchClickThroughRate" },
+        { name: "organicGoogleSearchAveragePosition" },
+      ],
+    }),
+    optionalRunReport(propertyId, {
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: "landingPagePlusQueryString" }],
+      metrics: [
+        { name: "organicGoogleSearchClicks" },
+        { name: "organicGoogleSearchImpressions" },
+        { name: "organicGoogleSearchAveragePosition" },
+      ],
+      orderBys: [{ metric: { metricName: "organicGoogleSearchClicks" }, desc: true }],
       limit: 8,
     }),
     runReport(propertyId, {
@@ -83,6 +146,19 @@ async function fetchPeriod(propertyId: string, startDate: string, endDate: strin
       metrics: [{ name: "activeUsers" }, { name: "sessions" }],
       orderBys: [{ dimension: { dimensionName: "date" } }],
     }),
+    runReport(propertyId, {
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: "date" }],
+      metrics: [{ name: "sessions" }],
+      dimensionFilter: organicFilter,
+      orderBys: [{ dimension: { dimensionName: "date" } }],
+    }),
+    optionalRunReport(propertyId, {
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: "date" }],
+      metrics: [{ name: "organicGoogleSearchClicks" }, { name: "organicGoogleSearchImpressions" }],
+      orderBys: [{ dimension: { dimensionName: "date" } }],
+    }),
   ]);
 
   const summaryRow = summary.rows?.[0];
@@ -96,13 +172,30 @@ async function fetchPeriod(propertyId: string, startDate: string, endDate: strin
     };
   });
 
+  const organicTrendMap = new Map(
+    (organicTrends.rows ?? []).map((row) => [normalizeDate(dimensionValue(row, 0)), metricValue(row, 0)]),
+  );
+  const searchTrendMap = new Map(
+    (searchTrends.rows ?? []).map((row) => [
+      normalizeDate(dimensionValue(row, 0)),
+      {
+        clicks: metricValue(row, 0),
+        impressions: metricValue(row, 1),
+      },
+    ]),
+  );
+
   const trendPoints: MetricPoint[] = (trends.rows ?? []).map((row) => {
     const date = normalizeDate(dimensionValue(row, 0));
+    const searchPoint = searchTrendMap.get(date);
     return {
       date,
       label: chartLabel(date),
       users: metricValue(row, 0),
       sessions: metricValue(row, 1),
+      organicSessions: organicTrendMap.get(date) ?? 0,
+      searchClicks: searchPoint?.clicks ?? 0,
+      searchImpressions: searchPoint?.impressions ?? 0,
       leads: 0,
     };
   });
@@ -116,6 +209,21 @@ async function fetchPeriod(propertyId: string, startDate: string, endDate: strin
       name: dimensionValue(row, 0),
       value: metricValue(row, 0),
       helper: `${metricValue(row, 1).toLocaleString()} users`,
+    })),
+    organicSessions: metricValue(organicSummary.rows?.[0], 0),
+    organicLandingPages: (organicLandingPages.rows ?? []).map<NamedMetric>((row) => ({
+      name: dimensionValue(row, 0) || "/",
+      value: metricValue(row, 0),
+      helper: `${metricValue(row, 1).toLocaleString()} organic users`,
+    })),
+    searchClicks: metricValue(searchOverview.rows?.[0], 0),
+    searchImpressions: metricValue(searchOverview.rows?.[0], 1),
+    searchCtr: metricValue(searchOverview.rows?.[0], 2),
+    searchAveragePosition: metricValue(searchOverview.rows?.[0], 3),
+    searchLandingPages: (searchLandingPages.rows ?? []).map<NamedMetric>((row) => ({
+      name: dimensionValue(row, 0) || "/",
+      value: metricValue(row, 0),
+      helper: `${metricValue(row, 1).toLocaleString()} impressions | avg. position ${metricValue(row, 2).toFixed(1)}`,
     })),
     deviceCategories: (devices.rows ?? []).map<NamedMetric>((row) => ({
       name: dimensionValue(row, 0).replace(/^\w/, (letter) => letter.toUpperCase()),
@@ -144,6 +252,11 @@ export async function getAnalyticsData(range: DateRangeValue): Promise<Analytics
       users: previous.users,
       sessions: previous.sessions,
       engagedSessions: previous.engagedSessions,
+      organicSessions: previous.organicSessions,
+      searchClicks: previous.searchClicks,
+      searchImpressions: previous.searchImpressions,
+      searchCtr: previous.searchCtr,
+      searchAveragePosition: previous.searchAveragePosition,
       leads: previousLeads,
     },
   };

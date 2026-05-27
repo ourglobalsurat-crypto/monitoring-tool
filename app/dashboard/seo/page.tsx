@@ -10,12 +10,8 @@ import { TrendChart, BarMetricChart, DonutChartCard } from "@/components/dashboa
 import { RankedList } from "@/components/dashboard/ranked-list";
 import { InsightList } from "@/components/dashboard/insight-list";
 import { useAnalyticsData } from "@/hooks/use-analytics-data";
-import { formatDuration, percentChange } from "@/lib/utils";
-import type { DateRangeValue, NamedMetric } from "@/types/dashboard";
-
-function findOrganicSource(sources: NamedMetric[]) {
-  return sources.find((source) => source.name.toLowerCase().includes("organic")) ?? null;
-}
+import { formatDuration, formatPercent, percentChange } from "@/lib/utils";
+import type { DateRangeValue } from "@/types/dashboard";
 
 export default function SeoPerformancePage() {
   const [range, setRange] = useState<DateRangeValue>("30d");
@@ -23,24 +19,25 @@ export default function SeoPerformancePage() {
   const analytics = data?.analytics;
 
   const leads = analytics?.conversions.reduce((sum, event) => sum + event.count, 0) ?? 0;
-  const organicSource = analytics ? findOrganicSource(analytics.trafficSources) : null;
-  const organicSessions = organicSource?.value ?? 0;
+  const organicSessions = analytics?.organicSessions ?? 0;
   const organicShare = analytics?.sessions ? organicSessions / analytics.sessions : 0;
+  const ctrPointChange = analytics ? (analytics.searchCtr - analytics.previous.searchCtr) * 100 : 0;
 
   const insights = useMemo(() => {
     if (!analytics) return [];
 
     const sessionChange = percentChange(analytics.sessions, analytics.previous.sessions);
-    const topChannel = analytics.trafficSources[0]?.name ?? "the leading channel";
+    const topLandingPage = analytics.searchLandingPages[0]?.name ?? "the strongest organic landing page";
 
     return [
-      `${topChannel} is currently the strongest traffic source in Google Analytics.`,
+      `${topLandingPage} is currently the strongest organic landing page in Google Analytics.`,
+      `${analytics.searchClicks.toLocaleString()} Google organic clicks came from ${analytics.searchImpressions.toLocaleString()} impressions.`,
       `Overall website sessions are ${Math.abs(sessionChange).toFixed(1)}% ${sessionChange >= 0 ? "higher" : "lower"} than the previous period.`,
-      organicSource
+      organicSessions
         ? `Organic traffic represents ${(organicShare * 100).toFixed(1)}% of all sessions in this date range.`
         : "Organic Search has not appeared as a top channel in this date range yet.",
-    ];
-  }, [analytics, organicShare, organicSource]);
+    ].slice(0, 4);
+  }, [analytics, organicShare, organicSessions]);
 
   return (
     <div className="space-y-6">
@@ -70,49 +67,56 @@ export default function SeoPerformancePage() {
             <>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <MetricCard
-                  label="Organic Sessions"
-                  value={organicSessions}
-                  helper="Sessions attributed to Organic Search in GA4."
-                  change={percentChange(analytics.sessions, analytics.previous.sessions)}
+                  label="Search Clicks"
+                  value={analytics.searchClicks}
+                  helper="Visits from Google organic search results."
+                  change={percentChange(analytics.searchClicks, analytics.previous.searchClicks)}
                 />
                 <MetricCard
-                  label="Organic Share"
-                  value={organicShare}
-                  helper="Organic Search share of all sessions."
-                  format="percent"
+                  label="Impressions"
+                  value={analytics.searchImpressions}
+                  helper="Times the website appeared in Google organic results."
+                  change={percentChange(analytics.searchImpressions, analytics.previous.searchImpressions)}
                 />
                 <MetricCard
-                  label="Engaged Visits"
-                  value={analytics.engagedSessions}
-                  helper="Visits with meaningful website activity."
-                  change={percentChange(analytics.engagedSessions, analytics.previous.engagedSessions)}
+                  label="Avg. Position"
+                  value={analytics.searchAveragePosition}
+                  helper="Lower numbers mean stronger average visibility."
+                  change={
+                    analytics.previous.searchAveragePosition
+                      ? ((analytics.previous.searchAveragePosition - analytics.searchAveragePosition) /
+                          analytics.previous.searchAveragePosition) *
+                        100
+                      : 0
+                  }
+                  format="position"
                 />
                 <MetricCard
-                  label="SEO Leads"
-                  value={leads}
-                  helper="Tracked calls, forms, and email clicks."
-                  change={percentChange(leads, analytics.previous.leads)}
+                  label="CTR Improvement"
+                  value={`${ctrPointChange >= 0 ? "+" : ""}${ctrPointChange.toFixed(1)} pts`}
+                  helper={`Current CTR: ${formatPercent(analytics.searchCtr)}. Previous: ${formatPercent(analytics.previous.searchCtr)}.`}
+                  change={percentChange(analytics.searchCtr, analytics.previous.searchCtr)}
                 />
               </div>
 
               <InsightList insights={insights} />
 
               <TrendChart
-                title="Traffic Trend"
-                description="Daily visitors and sessions from Google Analytics."
+                title="Google Organic Search Trend"
+                description="Daily clicks and impressions from GA4 linked search metrics."
                 data={analytics.trends}
                 lines={[
-                  { key: "users", name: "Visitors", color: "#0E4D92" },
-                  { key: "sessions", name: "Sessions", color: "#16865A" },
+                  { key: "searchClicks", name: "Clicks", color: "#0E4D92" },
+                  { key: "searchImpressions", name: "Impressions", color: "#16865A" },
                 ]}
               />
 
               <div className="grid gap-4 xl:grid-cols-2">
                 <BarMetricChart
-                  title="Channel Performance"
-                  description="How SEO compares with other website traffic sources."
-                  data={analytics.trafficSources}
-                  valueLabel="Sessions"
+                  title="Top Search Landing Pages"
+                  description="Pages receiving Google organic clicks in GA4."
+                  data={analytics.searchLandingPages}
+                  valueLabel="Clicks"
                 />
                 <DonutChartCard
                   title="Device Breakdown"
@@ -122,14 +126,14 @@ export default function SeoPerformancePage() {
               </div>
 
               <RankedList
-                title="SEO Lead Actions"
-                description={`Average engagement time: ${formatDuration(analytics.averageEngagementTime)}.`}
-                data={analytics.conversions.map((event) => ({
-                  name: event.label,
-                  value: event.count,
-                  helper: event.eventName,
-                }))}
-                valueLabel="Actions"
+                title="Organic Traffic Quality"
+                description={`Organic sessions: ${organicSessions.toLocaleString()}. Organic share: ${(organicShare * 100).toFixed(1)}%. Average engagement time: ${formatDuration(analytics.averageEngagementTime)}.`}
+                data={[
+                  { name: "Organic Sessions", value: analytics.organicSessions, helper: "Sessions attributed to Organic Search in GA4" },
+                  { name: "Engaged Visits", value: analytics.engagedSessions, helper: "Visits with meaningful website activity" },
+                  { name: "SEO Leads", value: leads, helper: "Tracked calls, forms, and email clicks" },
+                ]}
+                valueLabel="Total"
               />
             </>
           )}
