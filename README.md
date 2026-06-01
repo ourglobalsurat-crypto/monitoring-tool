@@ -13,6 +13,17 @@ Set these in Vercel Project Settings -> Environment Variables:
 
 `GOOGLE_PRIVATE_KEY` can be pasted with escaped newlines (`\n`). No Google credentials are exposed to the browser.
 
+For Vercel, the recommended option is to set `GOOGLE_SERVICE_ACCOUNT_JSON_BASE64` instead of `GOOGLE_CLIENT_EMAIL` and `GOOGLE_PRIVATE_KEY`. Encode the complete downloaded service-account JSON file as base64 and paste the single-line output into Vercel.
+
+PowerShell:
+
+```powershell
+$json = Get-Content 'C:\path\to\service-account.json' -Raw
+[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($json))
+```
+
+Treat the base64 value as a secret. Add it to the Production environment and redeploy.
+
 Example Vercel value:
 
 ```env
