@@ -24,6 +24,7 @@ function cleanEnvValue(value?: string) {
 type ServiceAccountCredentials = {
   client_email?: string;
   private_key?: string;
+  private_key_id?: string;
 };
 
 function parseServiceAccountJson(value: string, variableName: string) {
@@ -77,6 +78,7 @@ export function getGoogleAuth() {
   const serviceAccount = getServiceAccountFromBase64();
   const clientEmail = cleanEnvValue(serviceAccount?.client_email ?? process.env.GOOGLE_CLIENT_EMAIL);
   const privateKey = (serviceAccount?.private_key?.replace(/\\n/g, "\n").trim() ?? getPrivateKeyFromEnv());
+  const keyId = serviceAccount?.private_key_id;
 
   if (!clientEmail || !privateKey) {
     throw new Error("Google service account credentials are not configured. Set GOOGLE_SERVICE_ACCOUNT_JSON_BASE64, or set GOOGLE_CLIENT_EMAIL and GOOGLE_PRIVATE_KEY in Vercel.");
@@ -87,6 +89,7 @@ export function getGoogleAuth() {
   return new google.auth.JWT({
     email: clientEmail,
     key: privateKey,
+    keyId,
     scopes,
   });
 }

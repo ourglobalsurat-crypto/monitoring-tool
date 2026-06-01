@@ -44,7 +44,8 @@ export async function GET() {
     result.key_has_end = key.includes("-----END PRIVATE KEY-----") ? "yes" : "no";
     result.key_line_count = String(key.split("\n").length);
 
-    const auth = new google.auth.JWT({ email, key, scopes: ["https://www.googleapis.com/auth/analytics.readonly"] });
+    const keyId = sa?.private_key_id;
+    const auth = new google.auth.JWT({ email, key, keyId, scopes: ["https://www.googleapis.com/auth/analytics.readonly"] });
     const token = await auth.getAccessToken();
     result.auth_status = token.token ? "SUCCESS" : "no token";
   } catch (e: unknown) {
