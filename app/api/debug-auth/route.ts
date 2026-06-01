@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
+import { createHash, createPrivateKey, createPublicKey } from "node:crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +44,22 @@ export async function GET() {
     result.key_has_begin = key.includes("-----BEGIN PRIVATE KEY-----") ? "yes" : "no";
     result.key_has_end = key.includes("-----END PRIVATE KEY-----") ? "yes" : "no";
     result.key_line_count = String(key.split("\n").length);
+
+    // Fingerprint the actual keypair Vercel is using.
+    // Compare modulus_sha256 against the local file's value: 9d3eb444ce54f43e1f41da7ead0b460d
+    try {
+      const keyObj = createPrivateKey(key);
+      const pub = createPublicKey(keyObj);
+      const jwk = pub.export({ format: "jwk" }) as { n?: string };
+      result.modulus_sha256 = jwk.n
+        ? createHash("sha256").update(jwk.n).digest("hex").slice(0, 32)
+        : "no-modulus";
+    } catch (e) {
+      result.fingerprint_error = String(e);
+    }
+
+    // System clock (clock skew is a classic cause of invalid_grant)
+    result.server_time_utc = new Date().toISOString();
 
     const keyId = sa?.private_key_id;
     const auth = new google.auth.JWT({ email, key, keyId, scopes: ["https://www.googleapis.com/auth/analytics.readonly"] });
