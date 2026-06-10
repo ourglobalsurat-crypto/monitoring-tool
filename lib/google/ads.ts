@@ -12,10 +12,11 @@ const eventLabels: Record<ConversionMetric["eventName"], string> = {
   click_call: "Phone Calls",
 };
 
-// Google Ads traffic spreads across several GA4 channel groups, not just "Paid Search".
-// Performance Max lands in "Cross-network", Shopping/Display/YouTube have their own groups.
-// Counting only "Paid Search" badly undercounts paid leads, so include all Google paid channels.
-const PAID_CHANNELS = ["Paid Search", "Paid Shopping", "Display", "Cross-network", "Paid Video", "Paid Other"];
+// This is a lead-generation business (calls + form fills), not e-commerce, so Shopping ads
+// don't apply. Google Ads lead-gen traffic spreads across several GA4 channel groups:
+// Search, Performance Max (lands in "Cross-network"), Display, and YouTube ("Paid Video").
+// Counting only "Paid Search" badly undercounts paid leads, so include all of them.
+const PAID_CHANNELS = ["Paid Search", "Cross-network", "Display", "Paid Video", "Paid Other"];
 
 type RunReportResponse = {
   rows?: Array<{
