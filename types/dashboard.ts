@@ -9,6 +9,9 @@ export type MetricPoint = {
   searchClicks?: number;
   searchImpressions?: number;
   leads?: number;
+  adCost?: number;
+  adClicks?: number;
+  paidLeads?: number;
 };
 
 export type NamedMetric = {
@@ -21,6 +24,31 @@ export type ConversionMetric = {
   eventName: "emails" | "Form" | "click_call";
   label: string;
   count: number;
+};
+
+export type AdsData = {
+  hasCostData: boolean;
+  adCost: number;
+  adClicks: number;
+  adImpressions: number;
+  adCtr: number;
+  costPerClick: number;
+  paidSessions: number;
+  paidUsers: number;
+  paidLeads: number;
+  costPerLead: number;
+  conversionRate: number;
+  conversions: ConversionMetric[];
+  campaigns: NamedMetric[];
+  trends: MetricPoint[];
+  previous: {
+    adCost: number;
+    adClicks: number;
+    adImpressions: number;
+    paidSessions: number;
+    paidLeads: number;
+    costPerLead: number;
+  };
 };
 
 export type AnalyticsData = {
