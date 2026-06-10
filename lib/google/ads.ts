@@ -12,7 +12,10 @@ const eventLabels: Record<ConversionMetric["eventName"], string> = {
   click_call: "Phone Calls",
 };
 
-const PAID_CHANNEL = "Paid Search";
+// Google Ads traffic spreads across several GA4 channel groups, not just "Paid Search".
+// Performance Max lands in "Cross-network", Shopping/Display/YouTube have their own groups.
+// Counting only "Paid Search" badly undercounts paid leads, so include all Google paid channels.
+const PAID_CHANNELS = ["Paid Search", "Paid Shopping", "Display", "Cross-network", "Paid Video", "Paid Other"];
 
 type RunReportResponse = {
   rows?: Array<{
@@ -57,7 +60,7 @@ async function optionalRunReport(propertyId: string, requestBody: Record<string,
 const paidChannelFilter = {
   filter: {
     fieldName: "sessionDefaultChannelGroup",
-    stringFilter: { matchType: "EXACT", value: PAID_CHANNEL },
+    inListFilter: { values: PAID_CHANNELS },
   },
 };
 
